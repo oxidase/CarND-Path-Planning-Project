@@ -26,4 +26,6 @@ add_executable(path_planning ${sources})
 target_link_libraries(path_planning z ssl uv uWS)
 
 
-add_executable(transformer src/transformer.cpp)
+
+add_executable(transformer test/transformer.cpp)
+include_directories(src)

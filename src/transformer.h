@@ -2,12 +2,11 @@
 #define TRANSFORMER_H
 
 #include <istream>
+#include <ostream>
 #include <sstream>
 #include <regex>
 #include <string>
 #include <cmath>
-
-#include <iostream>
 
 struct xy_t
 {
@@ -19,6 +18,7 @@ xy_t operator-(const xy_t& lhs, const xy_t& rhs) { return xy_t{lhs.x - rhs.x, lh
 xy_t operator*(double lhs, const xy_t& rhs) { return xy_t{lhs * rhs.x, lhs * rhs.y}; };
 xy_t operator/(const xy_t& lhs, double rhs) { return xy_t{lhs.x / rhs, lhs.y / rhs}; };
 double operator%(const xy_t& lhs, const xy_t& rhs) { return (lhs - rhs).norm(); };
+std::ostream& operator<<(std::ostream& s, const xy_t& x) { return s << x.x << ", " << x.y; }
 
 // Cubic Hermite spline with finite difference interpolation https://en.wikipedia.org/wiki/Cubic_Hermite_spline
 // p(t) = (2t^3 - 3t^2+1)p0 + (t^3-2t^2+t)m0 + (-2t^3+3t^2)p1 + (t^3-t^2)m1
@@ -57,7 +57,7 @@ struct transformer_t
     }
 
     // Compute Hermite interpolation on segment k at arc-length s
-    xy_t p_x(std::size_t k, double s)
+    xy_t p_x(std::size_t k, double s) const
     {
         std::size_t next_k = k + 1 == s_k.size() ? 0 : k + 1;
         auto ds = s_k[next_k] - s_k[k];
@@ -73,7 +73,7 @@ struct transformer_t
             +  h11 * ds * m_k[next_k];
     }
 
-    xy_t t_x(std::size_t k, double s)
+    xy_t t_x(std::size_t k, double s) const
     {
         std::size_t next_k = k + 1 == s_k.size() ? 0 : k + 1;
         auto ds = s_k[next_k] - s_k[k];
@@ -89,16 +89,32 @@ struct transformer_t
             +  h11 * m_k[next_k];
     }
 
-    xy_t operator()(double s, double d)
+    // Find the index of the segment for s coordinate
+    std::size_t get_index(double s) const
     {
         s = fmod(s, length);
         auto it = std::prev(std::upper_bound(s_k.begin(), s_k.end(), s < 0 ? s + length : s));
-        std::size_t k = std::distance(s_k.begin(), it); // find the index of the current segment
+        return std::distance(s_k.begin(), it);
+    }
+
+    // Transform (s, d) point coordinate to (x, y)
+    xy_t operator()(double s, double d) const
+    {
+        std::size_t k = get_index(s); // find the index of the current segment
         auto p = p_x(k, s); // point in the middle of the road in Cartesian coordinates
         auto t = t_x(k, s); // tangent vector at point in the middle of the road
         auto n = xy_t{t.y, -t.x}; // normal vector at point in the middle of the road
         n = n / n.norm(); // normalize normal
         return p + d * n;
+    }
+
+    xy_t operator()(double s, xy_t v) const
+    {
+        std::size_t k = get_index(s); // find the index of the current segment
+        auto t = t_x(k, s); // tangent vector at point in the middle of the road
+        t = t / t.norm();
+        return xy_t{t.x * v.x + t.y * v.y,
+                    t.y * v.x - t.x * v.y};
     }
 
     std::vector<xy_t> p_k;

@@ -1,5 +1,7 @@
-#include <fstream>
 #include "transformer.h"
+
+#include <fstream>
+#include <iostream>
 
 int main()
 {
