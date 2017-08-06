@@ -255,10 +255,7 @@ int main() {
             double y = car_y;
             for(int i = 0; i < 50; i++)
             {
-                // x += v * cos(deg2rad(car_yaw)) * dt;
-                // y += v * sin(deg2rad(car_yaw)) * dt;
-
-                auto pt = transformer(car_s + i * v * dt);
+                auto pt = transformer(car_s + i * v * dt, 10);
                 next_x_vals.push_back(pt.x);
                 next_y_vals.push_back(pt.y);
             }
@@ -268,6 +265,8 @@ int main() {
           	msgJson["next_x"] = next_x_vals;
           	msgJson["next_y"] = next_y_vals;
           	auto msg = "42[\"control\","+ msgJson.dump()+"]";
+
+            std::cout << "msg = " << msg << "\n";
 
           	//this_thread::sleep_for(chrono::milliseconds(1000));
           	ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
@@ -302,7 +301,7 @@ int main() {
   h.onDisconnection([&h](uWS::WebSocket<uWS::SERVER> ws, int code,
                          char *message, size_t length) {
                         //ws.close();
-                        exit(0);
+                        //exit(0);
     std::cout << "Disconnected" << std::endl;
   });
 

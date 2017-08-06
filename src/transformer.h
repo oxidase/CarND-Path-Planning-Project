@@ -12,15 +12,13 @@
 struct xy_t
 {
     double x, y;
+    double norm() const { return sqrt(x * x + y * y); }
 };
 xy_t operator+(const xy_t& lhs, const xy_t& rhs) { return xy_t{lhs.x + rhs.x, lhs.y + rhs.y}; };
 xy_t operator-(const xy_t& lhs, const xy_t& rhs) { return xy_t{lhs.x - rhs.x, lhs.y - rhs.y}; };
 xy_t operator*(double lhs, const xy_t& rhs) { return xy_t{lhs * rhs.x, lhs * rhs.y}; };
 xy_t operator/(const xy_t& lhs, double rhs) { return xy_t{lhs.x / rhs, lhs.y / rhs}; };
-double operator%(const xy_t& lhs, const xy_t& rhs) {
-    auto dx = lhs.x - rhs.x, dy = lhs.y - rhs.y;
-    return sqrt(dx * dx + dy * dy);
-};
+double operator%(const xy_t& lhs, const xy_t& rhs) { return (lhs - rhs).norm(); };
 
 // Cubic Hermite spline with finite difference interpolation https://en.wikipedia.org/wiki/Cubic_Hermite_spline
 // p(t) = (2t^3 - 3t^2+1)p0 + (t^3-2t^2+t)m0 + (-2t^3+3t^2)p1 + (t^3-t^2)m1
@@ -58,6 +56,7 @@ struct transformer_t
         length = s_k.back() + p_k.front() % p_k.back();
     }
 
+    // Compute Hermite interpolation on segment k at arc-length s
     xy_t p_x(std::size_t k, double s)
     {
         std::size_t next_k = k + 1 == s_k.size() ? 0 : k + 1;
@@ -74,21 +73,33 @@ struct transformer_t
             +  h11 * ds * m_k[next_k];
     }
 
-    xy_t operator()(double s)
+    xy_t t_x(std::size_t k, double s)
+    {
+        std::size_t next_k = k + 1 == s_k.size() ? 0 : k + 1;
+        auto ds = s_k[next_k] - s_k[k];
+        auto t = (s - s_k[k]) / ds;
+        auto h00 =  6. * t * t   - 6. * t       ;
+        auto h10 =  3. * t * t   - 4. * t   + 1.;
+        auto h01 = -6. * t * t   + 6. * t       ;
+        auto h11 =  3. * t * t   - 2. * t       ;
+
+        return h00 * p_k[k] / ds
+            +  h10 * m_k[k]
+            +  h01 * p_k[next_k] / ds
+            +  h11 * m_k[next_k];
+    }
+
+    xy_t operator()(double s, double d)
     {
         s = fmod(s, length);
         auto it = std::prev(std::upper_bound(s_k.begin(), s_k.end(), s < 0 ? s + length : s));
-        std::size_t k = std::distance(s_k.begin(), it);
-        return p_x(k, s);
+        std::size_t k = std::distance(s_k.begin(), it); // find the index of the current segment
+        auto p = p_x(k, s); // point in the middle of the road in Cartesian coordinates
+        auto t = t_x(k, s); // tangent vector at point in the middle of the road
+        auto n = xy_t{t.y, -t.x}; // normal vector at point in the middle of the road
+        n = n / n.norm(); // normalize normal
+        return p + d * n;
     }
-
-    // xy_t dp_t(std::size_t k, double t)
-    // {
-    //     auto h00 =  6. * t * t   - 6. * t       ;
-    //     auto h10 =  3. * t * t   - 4. * t   + 1.;
-    //     auto h01 = -6. * t * t   + 6. * t       ;
-    //     auto h11 =  3. * t * t   - 2. * t       ;
-    // }
 
     std::vector<xy_t> p_k;
     std::vector<xy_t> m_k;
