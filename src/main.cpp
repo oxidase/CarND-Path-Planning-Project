@@ -9,6 +9,9 @@
 #include "Eigen-3.3/Eigen/QR"
 #include "json.hpp"
 
+#include "transformer.h"
+
+
 using namespace std;
 
 // for convenience
@@ -162,6 +165,7 @@ vector<double> getXY(double s, double d, vector<double> maps_s, vector<double> m
 int main() {
   uWS::Hub h;
 
+
   // Load up map values for waypoint's x,y,s and d normalized normal vectors
   vector<double> map_waypoints_x;
   vector<double> map_waypoints_y;
@@ -196,7 +200,11 @@ int main() {
   	map_waypoints_dy.push_back(d_y);
   }
 
-  h.onMessage([&map_waypoints_x,&map_waypoints_y,&map_waypoints_s,&map_waypoints_dx,&map_waypoints_dy](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
+  std::ifstream stream("../data/highway_map.csv");
+  transformer_t transformer(stream);
+
+
+  h.onMessage([&map_waypoints_x,&map_waypoints_y,&map_waypoints_s,&map_waypoints_dx,&map_waypoints_dy,&transformer](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
                      uWS::OpCode opCode) {
                   std::cout << "onMessage"<<"\n";
     // "42" at the start of the message means there's a websocket message event.
@@ -247,11 +255,15 @@ int main() {
             double y = car_y;
             for(int i = 0; i < 50; i++)
             {
-                next_x_vals.push_back(x);
-                next_y_vals.push_back(y);
-                x += v * cos(deg2rad(car_yaw)) * dt;
-                y += v * sin(deg2rad(car_yaw)) * dt;
+                // x += v * cos(deg2rad(car_yaw)) * dt;
+                // y += v * sin(deg2rad(car_yaw)) * dt;
+
+                auto pt = transformer(car_s + i * v * dt);
+                next_x_vals.push_back(pt.x);
+                next_y_vals.push_back(pt.y);
             }
+
+
 
           	msgJson["next_x"] = next_x_vals;
           	msgJson["next_y"] = next_y_vals;
