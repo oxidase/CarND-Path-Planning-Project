@@ -198,6 +198,7 @@ int main() {
 
   h.onMessage([&map_waypoints_x,&map_waypoints_y,&map_waypoints_s,&map_waypoints_dx,&map_waypoints_dy](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
                      uWS::OpCode opCode) {
+                  std::cout << "onMessage"<<"\n";
     // "42" at the start of the message means there's a websocket message event.
     // The 4 signifies a websocket message
     // The 2 signifies a websocket event
@@ -209,12 +210,12 @@ int main() {
 
       if (s != "") {
         auto j = json::parse(s);
-        
+
         string event = j[0].get<string>();
-        
+
         if (event == "telemetry") {
           // j[1] is the data JSON object
-          
+
         	// Main car's localization Data
           	double car_x = j[1]["x"];
           	double car_y = j[1]["y"];
@@ -226,7 +227,7 @@ int main() {
           	// Previous path data given to the Planner
           	auto previous_path_x = j[1]["previous_path_x"];
           	auto previous_path_y = j[1]["previous_path_y"];
-          	// Previous path's end s and d values 
+          	// Previous path's end s and d values
           	double end_path_s = j[1]["end_path_s"];
           	double end_path_d = j[1]["end_path_d"];
 
@@ -240,14 +241,25 @@ int main() {
 
 
           	// TODO: define a path made up of (x,y) points that the car will visit sequentially every .02 seconds
+            double dt = 0.02; // time delta [s]
+            double v = 25; // velocity [m/s]
+            double x = car_x;
+            double y = car_y;
+            for(int i = 0; i < 50; i++)
+            {
+                next_x_vals.push_back(x);
+                next_y_vals.push_back(y);
+                x += v * cos(deg2rad(car_yaw)) * dt;
+                y += v * sin(deg2rad(car_yaw)) * dt;
+            }
+
           	msgJson["next_x"] = next_x_vals;
           	msgJson["next_y"] = next_y_vals;
-
           	auto msg = "42[\"control\","+ msgJson.dump()+"]";
 
           	//this_thread::sleep_for(chrono::milliseconds(1000));
           	ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
-          
+
         }
       } else {
         // Manual driving
@@ -277,7 +289,7 @@ int main() {
 
   h.onDisconnection([&h](uWS::WebSocket<uWS::SERVER> ws, int code,
                          char *message, size_t length) {
-    ws.close();
+                        //ws.close();
     std::cout << "Disconnected" << std::endl;
   });
 
@@ -290,83 +302,3 @@ int main() {
   }
   h.run();
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
