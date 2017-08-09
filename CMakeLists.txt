@@ -7,8 +7,14 @@ add_definitions(-std=c++11)
 set(CXX_FLAGS "-Wall")
 set(CMAKE_CXX_FLAGS, "${CXX_FLAGS}")
 
-set(sources src/main.cpp)
+find_package(Boost 1.54 COMPONENTS iostreams system)
+if(Boost_FOUND)
+  include_directories(${Boost_INCLUDE_DIRS})
+  add_definitions(-DUSE_GNUPLOT)
+  set(MAYBE_BOOST ${Boost_IOSTREAMS_LIBRARY} ${Boost_SYSTEM_LIBRARY})
+endif()
 
+set(sources src/main.cpp)
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 
@@ -23,9 +29,9 @@ endif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 
 add_executable(path_planning ${sources})
 
-target_link_libraries(path_planning z ssl uv uWS)
-
+target_link_libraries(path_planning ${MAYBE_BOOST} z ssl uv uWS)
 
 
 add_executable(transformer test/transformer.cpp)
+add_executable(jmt test/jmt.cpp)
 include_directories(src)
