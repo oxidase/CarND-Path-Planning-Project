@@ -61,6 +61,7 @@ struct transformer_t
     {
         std::size_t next_k = k + 1 == s_k.size() ? 0 : k + 1;
         auto ds = s_k[next_k] - s_k[k];
+        ds += ds < 0 ? length : 0;
         auto t = (s - s_k[k]) / ds;
         auto h00 =  2. * t * t * t   - 3. * t * t           + 1.;
         auto h10 =       t * t * t   - 2. * t * t    + t       ;
@@ -100,6 +101,8 @@ struct transformer_t
     // Transform (s, d) point coordinate to (x, y)
     xy_t operator()(double s, double d) const
     {
+        s = fmod(s, length);
+        s += s < 0 ? length : 0;
         std::size_t k = get_index(s); // find the index of the current segment
         auto p = p_x(k, s); // point in the middle of the road in Cartesian coordinates
         auto t = t_x(k, s); // tangent vector at point in the middle of the road
@@ -110,6 +113,8 @@ struct transformer_t
 
     xy_t operator()(double s, xy_t v) const
     {
+        s = fmod(s, length);
+        s += s < 0 ? length : 0;
         std::size_t k = get_index(s); // find the index of the current segment
         auto t = t_x(k, s); // tangent vector at point in the middle of the road
         t = t / t.norm();
