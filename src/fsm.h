@@ -77,6 +77,7 @@ struct fsm_t
         if (lane == -1) lane = to_lane(car_d);
 
         double speed = maximal_speed;
+        bool lane_change = false;
 
         // Check lane and adjust speed or break
         for (auto vehicle : vehicles)
@@ -92,22 +93,26 @@ struct fsm_t
                     if (vehicle.vs.x < speed)
                     {
                         speed = vehicle.vs.x;
+                        lane_change = true;
                     }
                 }
                 if (vehicle.lane() == lane && distance < breaking_distance)
                 {
                     std::cout << "breaking, distance " << distance << " vehicle.vs.x " << vehicle.vs.x << "\n";
-                    speed = -maximal_speed;
+                    speed = 0;
                 }
             }
         }
 
-        std::cout << "=== speed " << speed << "\n";
+        if (lane_change)
+        {
+            if (can_change_to(lane - 1, car_s, speed, vehicles))
+                lane -= 1;
+            else if (can_change_to(lane + 1, car_s, speed, vehicles))
+                lane += 1;
+        }
 
-        if (car_s > 180) lane = 2;
-        if (car_s > 240) lane = 1;
-        if (car_s > 300) lane = 0;
-
+        std::cout << "=== speed " << speed << " lane " << lane << "\n";
 
 
         // Interpolate the current (x,v,a) values from the previous path
@@ -134,6 +139,23 @@ struct fsm_t
         coeff_d = jmt({car_d, car_vd, car_ad}, {target_d, target_vd, 0.}, maneuver_time);
 
         return generate_trajectory(previous_path_x, previous_path_y, car_s, car_d);
+    }
+
+    bool can_change_to(int lane, double car_s, double speed, const std::vector<vehicle_t>& vehicles)
+    {
+        if (lane < 0 || lane > 2)
+            return false;
+
+        double min_s = car_s, max_s = car_s + speed * maneuver_time, min_d = lane_center(lane) - 1.5, max_d = lane_center(lane) + 1.5;
+        for (auto vehicle : vehicles)
+        {
+            double vehicle_min_s = vehicle.s.x - 5, vehicle_max_s = vehicle.s.x + vehicle.vs.x * 2 * maneuver_time;
+            double vehicle_d0 = vehicle.s.y, vehicle_d1 = vehicle.s.y + vehicle.vs.y * maneuver_time;
+            double vehicle_min_d = std::min(vehicle_d0 - 1.5, vehicle_d1 - 1.5), vehicle_max_d = std::max(vehicle_d0 + 1.5, vehicle_d1 + 1.5);
+            if (!(max_s < vehicle_min_s || min_s > vehicle_max_s || max_d < vehicle_min_d || min_d > vehicle_max_d))
+                return false;
+        }
+        return true;
     }
 
     std::pair<std::vector<double>, std::vector<double>> generate_trajectory(const nlohmann::json &previous_path_x,
@@ -191,10 +213,10 @@ struct fsm_t
         return std::make_pair(x_traj, y_traj);
     }
 
-    const double safety_distance = 20; // [m]
-    const double breaking_distance = 10; // [m]
+    const double safety_distance = 25; // [m]
+    const double breaking_distance = 15; // [m]
     const double maneuver_time = 2.; // time to make a maneuver [s]
-    const double maximal_speed = 48. / 2.236936; // [m/s]
+    const double maximal_speed = 45. / 2.236936; // [m/s]
     const double maximal_acceleration = 9.; // [m/s^2]
     const double dt = 0.02; // time delta [s]
     const transformer_t transformer;
@@ -205,7 +227,7 @@ struct fsm_t
 
 #if defined(USE_GNUPLOT)
     Gnuplot gp;
-#endi
+#endif
 };
 
 #endif
