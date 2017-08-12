@@ -93,7 +93,9 @@ int main() {
 
           	vector<double> next_x_vals;
           	vector<double> next_y_vals;
+            std::cout.setstate(std::ios_base::badbit);
             std::tie(next_x_vals, next_y_vals) = fsm.step(j[1]); // j[1] is the data JSON object
+            std::cout.clear();
 
             json msgJson;
           	msgJson["next_x"] = next_x_vals;

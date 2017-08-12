@@ -43,6 +43,8 @@ struct fsm_t
 
     std::pair<std::vector<double>, std::vector<double>> step(nlohmann::json data)
     {
+        std::cout << std::setprecision(5);
+
         // Main car's localization Data
         double car_x = data["x"];
         double car_y = data["y"];
@@ -51,9 +53,14 @@ struct fsm_t
         double car_yaw = data["yaw"];
         double car_speed = data["speed"];
 
+        std::cout << "car: " << car_x << "," << car_y << " " << car_s << " " << car_d << " " << car_speed << " " << car_yaw << "\n";
+
         // Previous path data given to the Planner
         auto previous_path_x = data["previous_path_x"];
         auto previous_path_y = data["previous_path_y"];
+
+        std::cout << "previous_path_x: " << previous_path_x << "\n";
+        std::cout << "previous_path_y: " << previous_path_y << "\n";
 
         // Previous path's end s and d values
         double end_path_s = data["end_path_s"];
@@ -61,6 +68,7 @@ struct fsm_t
 
         // Sensor Fusion Data, a list of all other cars on the same side of the road.
         std::vector<vehicle_t> vehicles;
+        std::cout << "   vehicles\n";
         for (auto vehicle : data["sensor_fusion"])
         {
             if (vehicle[6] >= 0 && vehicle[6] <= 12)
@@ -70,6 +78,7 @@ struct fsm_t
                 xy_t s{vehicle[5], vehicle[6]};
                 auto vs = transformer(s.x, vx);
                 vehicles.push_back({vehicle[0], x, vx, s, vs,});
+                std::cout << "   " << vehicles.back() << "\n";
             }
         }
 
@@ -84,12 +93,14 @@ struct fsm_t
         {
             double distance = vehicle.s.x - car_s;
             distance += distance < 0 ? transformer.length : 0;
+            std::cout << "   distance = " << distance << "\n";
 
-            if (vehicle.lane() == lane)
+            if (car_d - 3 < vehicle.s.y && vehicle.s.y < car_d + 3)
             {
+                std::cout << "      check vehicle\n";
                 if (distance < safety_distance)
                 {
-                    std::cout << "adjusting speed, distance " << distance << " vehicle.vs.x " << vehicle.vs.x << "\n";
+                    std::cout << "        adjusting speed, distance " << distance << " vehicle.vs.x " << vehicle.vs.x << "\n";
                     if (vehicle.vs.x < speed)
                     {
                         speed = vehicle.vs.x;
@@ -98,8 +109,10 @@ struct fsm_t
                 }
                 if (vehicle.lane() == lane && distance < breaking_distance)
                 {
-                    std::cout << "breaking, distance " << distance << " vehicle.vs.x " << vehicle.vs.x << "\n";
+                    std::cout << "        breaking, distance " << distance << " vehicle.vs.x " << vehicle.vs.x << "\n";
                     speed = 0;
+                    lane_change = false;
+                    break;
                 }
             }
         }
@@ -112,7 +125,7 @@ struct fsm_t
                 lane += 1;
         }
 
-        std::cout << "=== speed " << speed << " lane " << lane << "\n";
+        std::cout << " new speed " << speed << " lane " << lane << "\n";
 
 
         // Interpolate the current (x,v,a) values from the previous path
@@ -135,6 +148,9 @@ struct fsm_t
         double target_d = lane_center(lane);
         double target_vd = (target_d - car_d) / maneuver_time;
 
+        std::cout << "poly s    " << car_s << ", " << car_vs << ", " << car_as << "   ->   " << target_s << ", " << target_vs << ", 0" << "\n";
+        std::cout << "poly d    " << car_d << ", " << car_vd << " " << car_ad << "    ->   " << target_d << ", " << target_vd << ", 0" << "\n";
+
         coeff_s = jmt({car_s, car_vs, car_as}, {target_s, target_vs, 0.}, maneuver_time);
         coeff_d = jmt({car_d, car_vd, car_ad}, {target_d, target_vd, 0.}, maneuver_time);
 
@@ -147,11 +163,13 @@ struct fsm_t
             return false;
 
         double min_s = car_s, max_s = car_s + speed * maneuver_time, min_d = lane_center(lane) - 1.5, max_d = lane_center(lane) + 1.5;
+        std::cout << "can_change_to:   s " << min_s << ".." << max_s << " " << min_d << ".." << max_d << "\n";
         for (auto vehicle : vehicles)
         {
-            double vehicle_min_s = vehicle.s.x - 5, vehicle_max_s = vehicle.s.x + vehicle.vs.x * 2 * maneuver_time;
+            double vehicle_min_s = vehicle.s.x - 5, vehicle_max_s = vehicle.s.x + vehicle.vs.x * maneuver_time / 2;
             double vehicle_d0 = vehicle.s.y, vehicle_d1 = vehicle.s.y + vehicle.vs.y * maneuver_time;
             double vehicle_min_d = std::min(vehicle_d0 - 1.5, vehicle_d1 - 1.5), vehicle_max_d = std::max(vehicle_d0 + 1.5, vehicle_d1 + 1.5);
+            std::cout << "  vehicle s " << vehicle_min_s << ".." << vehicle_max_s << " " << vehicle_min_d << ".." << vehicle_max_d << "\n";
             if (!(max_s < vehicle_min_s || min_s > vehicle_max_s || max_d < vehicle_min_d || min_d > vehicle_max_d))
                 return false;
         }
@@ -186,6 +204,11 @@ struct fsm_t
             y_path.push_back(pt.y);
         }
 
+        std::cout << "trajectory ";
+        for (std::size_t i = 0; i < t_path.size(); ++i)
+            std::cout << " " << t_path[i] << "," << x_path[i] << "," << y_path[i];
+        std::cout << "\n";
+
 #if defined(USE_GNUPLOT)
         gp << "set xrange [0:12]\n";
         gp << "set yrange [-5:50]\n";
@@ -210,6 +233,12 @@ struct fsm_t
             y_traj.push_back(y_spline(t));
         }
 
+
+        std::cout << "interpolated trajectory\n\n";
+        std::cout << "\nx = ["; for (std::size_t i = 0; i < x_traj.size(); ++i) std::cout << " " << x_traj[i] << ",";
+        std::cout << "]\ny = ["; for (std::size_t i = 0; i < y_traj.size(); ++i) std::cout << " " << y_traj[i] << ",";
+        std::cout << "]\n";
+
         return std::make_pair(x_traj, y_traj);
     }
 
@@ -217,7 +246,7 @@ struct fsm_t
     const double breaking_distance = 15; // [m]
     const double maneuver_time = 2.; // time to make a maneuver [s]
     const double maximal_speed = 45. / 2.236936; // [m/s]
-    const double maximal_acceleration = 9.; // [m/s^2]
+    const double maximal_acceleration = 8.; // [m/s^2]
     const double dt = 0.02; // time delta [s]
     const transformer_t transformer;
 
