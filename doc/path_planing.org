@@ -1,0 +1,82 @@
+* Initial data
+
+The track is presented by centerline points in $x,y$ and $s,d$ coordinates with normal vectors
+#+begin_src gnuplot :exports both :file images/track.png
+reset
+set terminal png size 1000,800
+set title "Track"
+set xlabel "x"
+set xlabel "y"
+plot '../data/highway_map.csv' using ($1):($2) with lines lw 5 title 'Road',\
+     '../data/highway_map.csv' using 1:2:(100*$4):(100*$5) with vectors head filled lt 2 title 'd vector'
+#+end_src
+
+#+results:
+[[file:images/track.png]]
+
+
+
+#+begin_src gnuplot :exports both :file images/poly.png
+reset
+set terminal png size 600,400
+set xlabel "x"
+set xlabel "y"
+set xrange [0:2]
+plot (((((0 * x + -0.25) * x + 1) * x + 0) * x + 0) * x + 124.834) with lines lw 5 title 'Road'
+#+end_src
+
+#+results:
+[[file:images/poly.png]]
+
+
+
+
+* Results
+
+#+begin_src gnuplot :exports both :file images/rounds.png
+reset
+set terminal png size 1000,800
+set title "Car position on the track"
+set xlabel "x"
+set ylabel "y"
+plot 'results.dat' using ($1):($2) with lines lw 1 title ''
+#+end_src
+
+#+results:
+[[file:images/rounds.png]]
+
+#+begin_src gnuplot :exports both :file images/speed.png
+reset
+set terminal png size 1200,800
+set title "Track"
+set xlabel "s"
+set ylabel "Speed, mph"
+plot 'results.dat' using ($3):($5) with lines lw 1 title 'Speed'
+#+end_src
+
+#+results:
+[[file:images/speed.png]]
+
+set arrow from graph 0, 4  to graph 1, 4 nohead
+set arrow from graph 0, 8  to graph 1, 8 nohead
+
+#+begin_src gnuplot :exports both :file images/lanes.png
+reset
+set terminal png size 1200,800
+set title "Lanes"
+set xlabel "step"
+set ylabel "d, m"
+set yrange [0:12]
+set style rect fc lt -1 fs solid 0.15 noborder
+set object 1 rect from 0,0 to 14000, 4
+set object 2 rect from 0,8 to 14000, 12
+
+plot 'results.dat' using ($0):($4) with lines lw 1 title 'Car d coordinate'
+#+end_src
+
+#+results:
+[[file:images/lanes.png]]
+
+
+[[https://raw.githubusercontent.com/oxidase/CarND-Path-Planning-Project/master/doc/video/10miles.mp4][Link to video file]]
+#+HTML:<p><center><video width="640" height="480" controls><source src="https://raw.githubusercontent.com/oxidase/CarND-Path-Planning-Project/master/doc/video/10miles.mp4" type="video/mp4">Your browser does not support the video tag.</video></center><p>
