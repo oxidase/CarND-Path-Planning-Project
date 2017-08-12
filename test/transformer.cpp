@@ -14,8 +14,13 @@ int main()
     std::cout << x.x << " " << x.y << "\n";
 
     double maneuver_time = 2;
-    auto coeff_s = jmt({6941.8, 20.117, 1.8705e-06}, {6982, 20.117, 0}, maneuver_time);
-    auto coeff_d = jmt({10, 0, 0}, {10, 0, 0}, maneuver_time);
+    auto coeff_s = jmt({0, 20, 0}, {40, 20, 0}, maneuver_time);
+    auto coeff_d = jmt({10, 0, 0}, {6, 0, 0}, maneuver_time);
+
+    for (auto c : coeff_s) std::cout << " " << c;
+    std::cout << "\n";
+    for (auto c : coeff_d) std::cout << " " << c;
+    std::cout << "\n";
 
     double s = poly(maneuver_time, coeff_s);
     double d = poly(maneuver_time, coeff_d);

@@ -111,6 +111,7 @@ struct transformer_t
         return p + d * n;
     }
 
+    // Transform velocity vector (vx, vy) into (vs, vd)
     xy_t operator()(double s, xy_t v) const
     {
         auto t = this->operator()(s);
@@ -118,6 +119,7 @@ struct transformer_t
                     t.y * v.x - t.x * v.y};
     }
 
+    // Return tangent vector at s
     xy_t operator()(double s) const
     {
         s = fmod(s, length);

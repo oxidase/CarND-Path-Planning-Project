@@ -3,7 +3,7 @@
 "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
-<!-- 2017-08-12 Sat 15:38 -->
+<!-- 2017-08-12 Sat 22:49 -->
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title></title>
@@ -254,13 +254,16 @@ for the JavaScript code in this tag.
 <h2>Table of Contents</h2>
 <div id="text-table-of-contents">
 <ul>
-<li><a href="#org76ae186">1. Initial data</a></li>
-<li><a href="#org42da368">2. Results</a></li>
+<li><a href="#org06280ec">1. Initial data</a></li>
+<li><a href="#orgab8e486">2. Coordinates transformation</a></li>
+<li><a href="#orgab27b7e">3. Trajectory generation</a></li>
+<li><a href="#org4398165">4. Lane changing model</a></li>
+<li><a href="#orgc92a3fe">5. Results</a></li>
 </ul>
 </div>
 </div>
-<div id="outline-container-org76ae186" class="outline-2">
-<h2 id="org76ae186"><span class="section-number-2">1</span> Initial data</h2>
+<div id="outline-container-org06280ec" class="outline-2">
+<h2 id="org06280ec"><span class="section-number-2">1</span> Initial data</h2>
 <div class="outline-text-2" id="text-1">
 <p>
 The track is presented by centerline points in \(x,y\) and \(s,d\) coordinates with normal vectors
@@ -281,33 +284,107 @@ The track is presented by centerline points in \(x,y\) and \(s,d\) coordinates w
 <p><img src="images/track.png" alt="track.png" />
 </p>
 </div>
+</div>
+</div>
 
 
+<div id="outline-container-orgab8e486" class="outline-2">
+<h2 id="orgab8e486"><span class="section-number-2">2</span> Coordinates transformation</h2>
+<div class="outline-text-2" id="text-2">
+<p>
+For transforming Frenet \(s,d\) coordinates to Cartesian \(x,y\) coordinates I added
+<a href="https://github.com/oxidase/CarND-Path-Planning-Project/blob/86ef67e1f4d2dfe56e7ebb4bf3f4d07721d87f4c/src/transformer.h#L25"><code>transformer_t</code> structure</a> that uses <a href="https://en.wikipedia.org/wiki/Cubic_Hermite_spline">Cubic Hermite splines</a> with the finite difference interpolation
+\[
+\mathbf{p}(s) = (2s^3 - 3s^2+1)\mathbf{p}_{k} + (s^3-2s^2+s)\mathbf{m}_0 + (-2s^3+3s^2)\mathbf{p}_{k+1} + (s^3-s^2)\mathbf{m}_{k+1}
+\]
+with \(\mathbf{p}_{k}\) and \(\mathbf{p}_{k+1}\) endpoints of the closest track segment and
+\[
+m_k = \frac{1}{2}\left(\frac{\mathbf{p}_{k+1}-\mathbf{p}_{k}}{s_{k+1}-s_k}+\frac{\mathbf{p}_{k}-\mathbf{p}_{k-1}}{s_{k}-s_{k-1}}\right)
+\]
+with wrapping into a loop by assuming \(s_{L+1}=s_0\).
+</p>
 
+<p>
+Coordinates \(x,y\) are \(\mathbf{p}(s) + d \cdot \mathbf{n}(s)\), where \(\mathbf{n}(s)\) is a normal vector at \(s\).
+</p>
+
+<p>
+Also <code>transformer_t</code> can return the track tangent vector at point \(s\) and transform the velocity vector \(v_x, v_y\)
+into \(v_s, v_d\) by the linear transformation from Cartesian into \(\mathbf{t}(s), \mathbf{n}(s)\) basis.
+</p>
+</div>
+</div>
+
+<div id="outline-container-orgab27b7e" class="outline-2">
+<h2 id="orgab27b7e"><span class="section-number-2">3</span> Trajectory generation</h2>
+<div class="outline-text-2" id="text-3">
+<p>
+The lane changing trajectory is generated with the jerk minimizing polynomial described in the lecture
+and realized as <a href="https://github.com/oxidase/CarND-Path-Planning-Project/blob/86ef67e1f4d2dfe56e7ebb4bf3f4d07721d87f4c/src/jmt.h#L8"><code>jmt</code></a> function that takes maneuver time, starting and target position, speed and acceleration
+and returns 5th order polynomial coefficients.
+</p>
+
+<p>
+For example, for a lane change \(d\) with initial triple \(10, 0, 0\) and target values \(6, 0, 0\)
+with the maneuver time 2 seconds the polynomial will be
+</p>
 <div class="org-src-container">
 <pre class="src src-gnuplot"><span style="color: #008b8b;">reset</span>
 <span style="color: #008b8b;">set</span> terminal png size 600,400
 <span style="color: #008b8b;">set</span> xlabel <span style="color: #8b2252;">"x"</span>
 <span style="color: #008b8b;">set</span> xlabel <span style="color: #8b2252;">"y"</span>
 <span style="color: #008b8b;">set</span> xrange [<span style="color: #008b8b;">0:2</span>]
-<span style="color: #a020f0;">plot</span> (((((0 * x + -0.25) * x + 1) * x + 0) * x + 0) * x + 124.834) <span style="color: #228b22;">with</span> <span style="color: #0000ff;">lines</span> <span style="color: #228b22;">lw</span> 5 <span style="color: #228b22;">title</span> <span style="color: #8b2252;">'Road'</span>
+<span style="color: #008b8b;">set</span> <span style="color: #228b22;">title</span> <span style="color: #8b2252;">'JMT polynomial for d'</span>
+<span style="color: #a020f0;">plot</span> (((((-0.75 * x + 3.75) * x + -5) * x + 0) * x + 0) * x + 10) <span style="color: #228b22;">with</span> <span style="color: #0000ff;">lines</span> <span style="color: #228b22;">lw</span> 5 <span style="color: #228b22;">title</span> <span style="color: #8b2252;">''</span>
 </pre>
 </div>
 
+<p>
+<img src="images/poly.png" alt="poly.png" />
+and corresponds to lane change from the rightmost to the center lane.
+</p>
 
-<div class="figure">
-<p><img src="images/poly.png" alt="poly.png" />
+<p>
+The JMT trajectory with some values from the previous step is interpolated via splines
+to ensure continuity from the previous step and prevent sudden changes in speed.
 </p>
 </div>
 </div>
+
+<div id="outline-container-org4398165" class="outline-2">
+<h2 id="org4398165"><span class="section-number-2">4</span> Lane changing model</h2>
+<div class="outline-text-2" id="text-4">
+<p>
+The lane changing algorithm and pretty simple: the finite state machine contains only the lane number
+that can be 0, 1 or 2. At every step the input values are checked and the output trajectory
+is returned based on the following assumptions:
+</p>
+
+<ul class="org-ul">
+<li>the initial speed is set to 48 mph</li>
+<li>if the track has the turning angle more than 5° in 50 meters the speed is decreased by 1m/s mph to prevent speed limit violations</li>
+<li>if any vehicle drives is in the current lane and closer than <code>safety_distance=25m</code> then the tharget speed is adjusted to
+minimal one and a lane change is flagged</li>
+<li>if any vehicle drives is in the current lane and closer than <code>breaking_distance=15m</code>  then the target speed is set to 0
+and lane changing is prohibited</li>
+<li>if the lane changing is flagged then left and right lane changes are checked and the current lane is changed
+if such change is possible</li>
+<li>a new trajectory is computed based on the current car position, speed, acceleration, the target car position and speed</li>
+</ul>
+</div>
 </div>
 
 
+<div id="outline-container-orgc92a3fe" class="outline-2">
+<h2 id="orgc92a3fe"><span class="section-number-2">5</span> Results</h2>
+<div class="outline-text-2" id="text-5">
+<p>
+I have tested the above simple lane changing algorithm by running 4 simulation laps without incidents.
+</p>
 
-
-<div id="outline-container-org42da368" class="outline-2">
-<h2 id="org42da368"><span class="section-number-2">2</span> Results</h2>
-<div class="outline-text-2" id="text-2">
+<p>
+The following graphs show the car position on the track
+</p>
 <div class="org-src-container">
 <pre class="src src-gnuplot"><span style="color: #008b8b;">reset</span>
 <span style="color: #008b8b;">set</span> terminal png size 1000,800
@@ -318,11 +395,15 @@ The track is presented by centerline points in \(x,y\) and \(s,d\) coordinates w
 </pre>
 </div>
 
-
-<div class="figure">
-<p><img src="images/rounds.png" alt="rounds.png" />
+<p>
+<img src="images/rounds.png" alt="rounds.png" />
+the car speed that shows different driving modes:
 </p>
-</div>
+<ul class="org-ul">
+<li>driving with the maximal speed</li>
+<li>following cars with the adjusted speed 36 mph</li>
+<li>breaking</li>
+</ul>
 
 <div class="org-src-container">
 <pre class="src src-gnuplot"><span style="color: #008b8b;">reset</span>
@@ -344,8 +425,7 @@ The track is presented by centerline points in \(x,y\) and \(s,d\) coordinates w
 </div>
 
 <p>
-set arrow from graph 0, 4  to graph 1, 4 nohead
-set arrow from graph 0, 8  to graph 1, 8 nohead
+and \(d\) coordinate that indicates position on a lane
 </p>
 
 <div class="org-src-container">
@@ -383,7 +463,7 @@ set arrow from graph 0, 8  to graph 1, 8 nohead
 </div>
 <div id="postamble" class="status">
 <p class="author">Author: miha</p>
-<p class="date">Created: 2017-08-12 Sat 15:38</p>
+<p class="date">Created: 2017-08-12 Sat 22:49</p>
 <p class="validation"><a href="http://validator.w3.org/check?uri=referer">Validate</a></p>
 </div>
 </body>

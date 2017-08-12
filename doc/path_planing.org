@@ -15,24 +15,71 @@ plot '../data/highway_map.csv' using ($1):($2) with lines lw 5 title 'Road',\
 [[file:images/track.png]]
 
 
+* Coordinates transformation
 
+For transforming Frenet $s,d$ coordinates to Cartesian $x,y$ coordinates I added
+[[https://github.com/oxidase/CarND-Path-Planning-Project/blob/86ef67e1f4d2dfe56e7ebb4bf3f4d07721d87f4c/src/transformer.h#L25][=transformer_t= structure]] that uses [[https://en.wikipedia.org/wiki/Cubic_Hermite_spline][Cubic Hermite splines]] with the finite difference interpolation
+\[
+\mathbf{p}(s) = (2s^3 - 3s^2+1)\mathbf{p}_{k} + (s^3-2s^2+s)\mathbf{m}_0 + (-2s^3+3s^2)\mathbf{p}_{k+1} + (s^3-s^2)\mathbf{m}_{k+1}
+\]
+with $\mathbf{p}_{k}$ and $\mathbf{p}_{k+1}$ endpoints of the closest track segment and
+\[
+m_k = \frac{1}{2}\left(\frac{\mathbf{p}_{k+1}-\mathbf{p}_{k}}{s_{k+1}-s_k}+\frac{\mathbf{p}_{k}-\mathbf{p}_{k-1}}{s_{k}-s_{k-1}}\right)
+\]
+with wrapping into a loop by assuming $s_{L+1}=s_0$.
+
+Coordinates $x,y$ are $\mathbf{p}(s) + d \cdot \mathbf{n}(s)$, where $\mathbf{n}(s)$ is a normal vector at $s$.
+
+Also =transformer_t= can return the track tangent vector at point $s$ and transform the velocity vector $v_x, v_y$
+into $v_s, v_d$ by the linear transformation from Cartesian into $\mathbf{t}(s), \mathbf{n}(s)$ basis.
+
+* Trajectory generation
+
+The lane changing trajectory is generated with the jerk minimizing polynomial described in the lecture
+and realized as [[https://github.com/oxidase/CarND-Path-Planning-Project/blob/86ef67e1f4d2dfe56e7ebb4bf3f4d07721d87f4c/src/jmt.h#L8][=jmt=]] function that takes maneuver time, starting and target position, speed and acceleration
+and returns 5th order polynomial coefficients.
+
+For example, for a lane change $d$ with initial triple $10, 0, 0$ and target values $6, 0, 0$
+with the maneuver time 2 seconds the polynomial will be
 #+begin_src gnuplot :exports both :file images/poly.png
 reset
 set terminal png size 600,400
 set xlabel "x"
 set xlabel "y"
 set xrange [0:2]
-plot (((((0 * x + -0.25) * x + 1) * x + 0) * x + 0) * x + 124.834) with lines lw 5 title 'Road'
+set title 'JMT polynomial for d'
+plot (((((-0.75 * x + 3.75) * x + -5) * x + 0) * x + 0) * x + 10) with lines lw 5 title ''
 #+end_src
 
 #+results:
 [[file:images/poly.png]]
+and corresponds to lane change from the rightmost to the center lane.
 
+The JMT trajectory with some values from the previous step is interpolated via splines
+to ensure continuity from the previous step and prevent sudden changes in speed.
 
+* Lane changing model
+
+The lane changing algorithm and pretty simple: the finite state machine contains only the lane number
+that can be 0, 1 or 2. At every step the input values are checked and the output trajectory
+is returned based on the following assumptions:
+
+- the initial speed is set to 48 mph
+- if the track has the turning angle more than 5° in 50 meters the speed is decreased by 1m/s mph to prevent speed limit violations
+- if any vehicle drives is in the current lane and closer than =safety_distance=25m= then the tharget speed is adjusted to
+  minimal one and a lane change is flagged
+- if any vehicle drives is in the current lane and closer than =breaking_distance=15m=  then the target speed is set to 0
+  and lane changing is prohibited
+- if the lane changing is flagged then left and right lane changes are checked and the current lane is changed
+  if such change is possible
+- a new trajectory is computed based on the current car position, speed, acceleration, the target car position and speed
 
 
 * Results
 
+I have tested the above simple lane changing algorithm by running 4 simulation laps without incidents.
+
+The following graphs show the car position on the track
 #+begin_src gnuplot :exports both :file images/rounds.png
 reset
 set terminal png size 1000,800
@@ -44,6 +91,10 @@ plot 'results.dat' using ($1):($2) with lines lw 1 title ''
 
 #+results:
 [[file:images/rounds.png]]
+the car speed that shows different driving modes:
+- driving with the maximal speed
+- following cars with the adjusted speed 36 mph
+- breaking
 
 #+begin_src gnuplot :exports both :file images/speed.png
 reset
@@ -60,8 +111,7 @@ plot 'lap1.dat' using ($3):($5) with lines lw 2 title 'Lap 1', \
 #+results:
 [[file:images/speed.png]]
 
-set arrow from graph 0, 4  to graph 1, 4 nohead
-set arrow from graph 0, 8  to graph 1, 8 nohead
+and $d$ coordinate that indicates position on a lane
 
 #+begin_src gnuplot :exports both :file images/lanes.png
 reset
