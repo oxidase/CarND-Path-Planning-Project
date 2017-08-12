@@ -125,7 +125,7 @@ struct fsm_t
                 lane += 1;
         }
 
-        std::cout << " new speed " << speed << " lane " << lane << "\n";
+        std::cout << " new speed " << speed << " new lane " << lane << "\n";
 
 
         // Interpolate the current (x,v,a) values from the previous path
@@ -180,19 +180,20 @@ struct fsm_t
                                                                             const nlohmann::json &previous_path_y,
                                                                             double car_s, double car_d)
     {
+        double mix_time = maneuver_time / 8;
         std::vector<double> t_path, x_path, y_path;
         if (!previous_path_x.empty())
         {
-            t_path.push_back(0);
-            x_path.push_back(previous_path_x[0]);
-            y_path.push_back(previous_path_y[0]);
-            t_path.push_back(dt);
-            x_path.push_back(previous_path_x[1]);
-            y_path.push_back(previous_path_y[1]);
+            for (std::size_t i = 0; i < 5 && i < previous_path_x.size(); ++i)
+            {
+                t_path.push_back(i * dt);
+                x_path.push_back(previous_path_x[i]);
+                y_path.push_back(previous_path_y[i]);
+            }
         }
 
         std::vector<double> s_plot{0}, d_plot{car_d};
-        for (double step = maneuver_time / 8, t = previous_path_x.empty() ? 0 : step; t <= maneuver_time; t += step)
+        for (double step = maneuver_time / 8, t = previous_path_x.empty() ? 0 : maneuver_time / 2; t <= maneuver_time; t += step)
         {
             double s = poly(t, coeff_s);
             double d = poly(t, coeff_d);
