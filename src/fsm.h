@@ -88,6 +88,16 @@ struct fsm_t
         double speed = maximal_speed;
         bool lane_change = false;
 
+
+        // Limit speed on curvy parts
+        auto t0 = transformer(car_s);
+        auto t1 = transformer(car_s + 50);
+        auto angle = 180. * acos(t0.x * t1.x + t0.y * t1.y) / M_PI;
+        if (angle > 5.)
+            speed -= 1;
+        std::cout << "====  car speed " << car_speed << ", angle " << angle << ", speed = " << speed << " " << " dot " << t0.x * t1.x + t0.y * t1.y << "\n";
+
+
         // Check lane and adjust speed or break
         for (auto vehicle : vehicles)
         {
@@ -246,7 +256,7 @@ struct fsm_t
     const double safety_distance = 25; // [m]
     const double breaking_distance = 15; // [m]
     const double maneuver_time = 2.; // time to make a maneuver [s]
-    const double maximal_speed = 45. / 2.236936; // [m/s]
+    const double maximal_speed = 48. / 2.236936; // [m/s]
     const double maximal_acceleration = 8.; // [m/s^2]
     const double dt = 0.02; // time delta [s]
     const transformer_t transformer;

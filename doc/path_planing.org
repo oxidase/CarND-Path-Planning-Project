@@ -48,10 +48,13 @@ plot 'results.dat' using ($1):($2) with lines lw 1 title ''
 #+begin_src gnuplot :exports both :file images/speed.png
 reset
 set terminal png size 1200,800
-set title "Track"
+set title "Speed, mph"
 set xlabel "s"
 set ylabel "Speed, mph"
-plot 'results.dat' using ($3):($5) with lines lw 1 title 'Speed'
+plot 'lap1.dat' using ($3):($5) with lines lw 2 title 'Lap 1', \
+     'lap2.dat' using ($3):($5) with lines lw 2 title 'Lap 2', \
+     'lap3.dat' using ($3):($5) with lines lw 2 title 'Lap 3', \
+     'lap4.dat' using ($3):($5) with lines lw 2 title 'Lap 4'
 #+end_src
 
 #+results:
@@ -64,14 +67,18 @@ set arrow from graph 0, 8  to graph 1, 8 nohead
 reset
 set terminal png size 1200,800
 set title "Lanes"
-set xlabel "step"
+set xlabel "s, m"
 set ylabel "d, m"
+set xrange [0:6945]
 set yrange [0:12]
 set style rect fc lt -1 fs solid 0.15 noborder
-set object 1 rect from 0,0 to 14000, 4
-set object 2 rect from 0,8 to 14000, 12
+set object 1 rect from 0,0 to 6945, 4
+set object 2 rect from 0,8 to 6945, 12
 
-plot 'results.dat' using ($0):($4) with lines lw 1 title 'Car d coordinate'
+plot 'lap1.dat' using ($3):($4) with lines lw 2 title 'Lap 1', \
+     'lap2.dat' using ($3):($4) with lines lw 2 title 'Lap 2', \
+     'lap3.dat' using ($3):($4) with lines lw 2 title 'Lap 3', \
+     'lap4.dat' using ($3):($4) with lines lw 2 title 'Lap 4'
 #+end_src
 
 #+results:

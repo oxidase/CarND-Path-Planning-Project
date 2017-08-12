@@ -3,7 +3,7 @@
 "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
-<!-- 2017-08-12 Sat 13:28 -->
+<!-- 2017-08-12 Sat 14:56 -->
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title></title>
@@ -254,13 +254,13 @@ for the JavaScript code in this tag.
 <h2>Table of Contents</h2>
 <div id="text-table-of-contents">
 <ul>
-<li><a href="#org290d31a">1. Initial data</a></li>
-<li><a href="#org280e95e">2. Results</a></li>
+<li><a href="#org688ee9a">1. Initial data</a></li>
+<li><a href="#org38c4a80">2. Results</a></li>
 </ul>
 </div>
 </div>
-<div id="outline-container-org290d31a" class="outline-2">
-<h2 id="org290d31a"><span class="section-number-2">1</span> Initial data</h2>
+<div id="outline-container-org688ee9a" class="outline-2">
+<h2 id="org688ee9a"><span class="section-number-2">1</span> Initial data</h2>
 <div class="outline-text-2" id="text-1">
 <p>
 The track is presented by centerline points in \(x,y\) and \(s,d\) coordinates with normal vectors
@@ -305,8 +305,8 @@ The track is presented by centerline points in \(x,y\) and \(s,d\) coordinates w
 
 
 
-<div id="outline-container-org280e95e" class="outline-2">
-<h2 id="org280e95e"><span class="section-number-2">2</span> Results</h2>
+<div id="outline-container-org38c4a80" class="outline-2">
+<h2 id="org38c4a80"><span class="section-number-2">2</span> Results</h2>
 <div class="outline-text-2" id="text-2">
 <div class="org-src-container">
 <pre class="src src-gnuplot"><span style="color: #008b8b;">reset</span>
@@ -327,10 +327,13 @@ The track is presented by centerline points in \(x,y\) and \(s,d\) coordinates w
 <div class="org-src-container">
 <pre class="src src-gnuplot"><span style="color: #008b8b;">reset</span>
 <span style="color: #008b8b;">set</span> terminal png size 1200,800
-<span style="color: #008b8b;">set</span> <span style="color: #228b22;">title</span> <span style="color: #8b2252;">"Track"</span>
+<span style="color: #008b8b;">set</span> <span style="color: #228b22;">title</span> <span style="color: #8b2252;">"Speed, mph"</span>
 <span style="color: #008b8b;">set</span> xlabel <span style="color: #8b2252;">"s"</span>
 <span style="color: #008b8b;">set</span> ylabel <span style="color: #8b2252;">"Speed, mph"</span>
-<span style="color: #a020f0;">plot</span> <span style="color: #8b2252;">'results.dat'</span> <span style="color: #228b22;">using</span> ($3):($5) <span style="color: #228b22;">with</span> <span style="color: #0000ff;">lines</span> <span style="color: #228b22;">lw</span> 1 <span style="color: #228b22;">title</span> <span style="color: #8b2252;">'Speed'</span>
+<span style="color: #a020f0;">plot</span> <span style="color: #8b2252;">'lap1.dat'</span> <span style="color: #228b22;">using</span> ($3):($5) <span style="color: #228b22;">with</span> <span style="color: #0000ff;">lines</span> <span style="color: #228b22;">lw</span> 2 <span style="color: #228b22;">title</span> <span style="color: #8b2252;">'Lap 1'</span>, \
+     <span style="color: #8b2252;">'lap2.dat'</span> <span style="color: #228b22;">using</span> ($3):($5) <span style="color: #228b22;">with</span> <span style="color: #0000ff;">lines</span> <span style="color: #228b22;">lw</span> 2 <span style="color: #228b22;">title</span> <span style="color: #8b2252;">'Lap 2'</span>, \
+     <span style="color: #8b2252;">'lap3.dat'</span> <span style="color: #228b22;">using</span> ($3):($5) <span style="color: #228b22;">with</span> <span style="color: #0000ff;">lines</span> <span style="color: #228b22;">lw</span> 2 <span style="color: #228b22;">title</span> <span style="color: #8b2252;">'Lap 3'</span>, \
+     <span style="color: #8b2252;">'lap4.dat'</span> <span style="color: #228b22;">using</span> ($3):($5) <span style="color: #228b22;">with</span> <span style="color: #0000ff;">lines</span> <span style="color: #228b22;">lw</span> 2 <span style="color: #228b22;">title</span> <span style="color: #8b2252;">'Lap 4'</span>
 </pre>
 </div>
 
@@ -349,14 +352,18 @@ set arrow from graph 0, 8  to graph 1, 8 nohead
 <pre class="src src-gnuplot"><span style="color: #008b8b;">reset</span>
 <span style="color: #008b8b;">set</span> terminal png size 1200,800
 <span style="color: #008b8b;">set</span> <span style="color: #228b22;">title</span> <span style="color: #8b2252;">"Lanes"</span>
-<span style="color: #008b8b;">set</span> xlabel <span style="color: #8b2252;">"step"</span>
+<span style="color: #008b8b;">set</span> xlabel <span style="color: #8b2252;">"s, m"</span>
 <span style="color: #008b8b;">set</span> ylabel <span style="color: #8b2252;">"d, m"</span>
+<span style="color: #008b8b;">set</span> xrange [<span style="color: #008b8b;">0:6945</span>]
 <span style="color: #008b8b;">set</span> yrange [<span style="color: #008b8b;">0:12</span>]
 <span style="color: #008b8b;">set</span> style rect fc <span style="color: #228b22;">lt</span> -1 fs solid 0.15 noborder
-<span style="color: #008b8b;">set</span> object 1 rect from 0,0 to 14000, 4
-<span style="color: #008b8b;">set</span> object 2 rect from 0,8 to 14000, 12
+<span style="color: #008b8b;">set</span> object 1 rect from 0,0 to 6945, 4
+<span style="color: #008b8b;">set</span> object 2 rect from 0,8 to 6945, 12
 
-<span style="color: #a020f0;">plot</span> <span style="color: #8b2252;">'results.dat'</span> <span style="color: #228b22;">using</span> ($0):($4) <span style="color: #228b22;">with</span> <span style="color: #0000ff;">lines</span> <span style="color: #228b22;">lw</span> 1 <span style="color: #228b22;">title</span> <span style="color: #8b2252;">'Car d coordinate'</span>
+<span style="color: #a020f0;">plot</span> <span style="color: #8b2252;">'lap1.dat'</span> <span style="color: #228b22;">using</span> ($3):($4) <span style="color: #228b22;">with</span> <span style="color: #0000ff;">lines</span> <span style="color: #228b22;">lw</span> 2 <span style="color: #228b22;">title</span> <span style="color: #8b2252;">'Lap 1'</span>, \
+     <span style="color: #8b2252;">'lap2.dat'</span> <span style="color: #228b22;">using</span> ($3):($4) <span style="color: #228b22;">with</span> <span style="color: #0000ff;">lines</span> <span style="color: #228b22;">lw</span> 2 <span style="color: #228b22;">title</span> <span style="color: #8b2252;">'Lap 2'</span>, \
+     <span style="color: #8b2252;">'lap3.dat'</span> <span style="color: #228b22;">using</span> ($3):($4) <span style="color: #228b22;">with</span> <span style="color: #0000ff;">lines</span> <span style="color: #228b22;">lw</span> 2 <span style="color: #228b22;">title</span> <span style="color: #8b2252;">'Lap 3'</span>, \
+     <span style="color: #8b2252;">'lap4.dat'</span> <span style="color: #228b22;">using</span> ($3):($4) <span style="color: #228b22;">with</span> <span style="color: #0000ff;">lines</span> <span style="color: #228b22;">lw</span> 2 <span style="color: #228b22;">title</span> <span style="color: #8b2252;">'Lap 4'</span>
 </pre>
 </div>
 
@@ -376,7 +383,7 @@ set arrow from graph 0, 8  to graph 1, 8 nohead
 </div>
 <div id="postamble" class="status">
 <p class="author">Author: miha</p>
-<p class="date">Created: 2017-08-12 Sat 13:28</p>
+<p class="date">Created: 2017-08-12 Sat 14:56</p>
 <p class="validation"><a href="http://validator.w3.org/check?uri=referer">Validate</a></p>
 </div>
 </body>

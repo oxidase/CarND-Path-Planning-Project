@@ -113,13 +113,18 @@ struct transformer_t
 
     xy_t operator()(double s, xy_t v) const
     {
+        auto t = this->operator()(s);
+        return xy_t{t.x * v.x + t.y * v.y,
+                    t.y * v.x - t.x * v.y};
+    }
+
+    xy_t operator()(double s) const
+    {
         s = fmod(s, length);
         s += s < 0 ? length : 0;
         std::size_t k = get_index(s); // find the index of the current segment
         auto t = t_x(k, s); // tangent vector at point in the middle of the road
-        t = t / t.norm();
-        return xy_t{t.x * v.x + t.y * v.y,
-                    t.y * v.x - t.x * v.y};
+        return t / t.norm();
     }
 
     std::vector<xy_t> p_k;
